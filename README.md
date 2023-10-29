@@ -9,4 +9,4 @@ Main branch is the current Project code, additional branches are to retain the s
 
 [main]: </b> Project 2 Submission<br />
 <b>| -> [Project-1]:</b> Project 1 Submission<br />
-<b>| -> [ ]</b><br />
+<b>| -> [Project-2]:</b> Project 2 Submission<br />
