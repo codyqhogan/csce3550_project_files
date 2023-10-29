@@ -160,7 +160,7 @@ response_suite = unittest.TestLoader().loadTestsFromTestCase(
 full_suite = unittest.TestSuite([basic_suite, auth_suite, jwks_suite, response_suite])
 unittest.TextTestRunner(verbosity=2).run(full_suite)  # run the full set of tests
 print("\nTest Coverage = Lines of Code Executed in Tests / Total Lines of Code")
-print("Test Coverage = 144 / 102 = {}%".format(int((144 / 155) * 100)))
+print("Test Coverage = 144 / 155 = {}%".format(int((144 / 155) * 100)))
 # My Test Suite does not cover the following lines of code:
 #   86-93: Checking if there is an expired tag
 #   98-101: Querying for an expired key
