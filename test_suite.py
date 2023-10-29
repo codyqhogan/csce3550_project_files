@@ -1,5 +1,6 @@
 import unittest
 import requests
+import os
 
 # Cody Quinn Hogan |    cqh0003                   |    11342946
 # CSCE 3550.001    |    Project 1: JWKS Server    |    test_suite.py
@@ -16,6 +17,9 @@ class ServerTest(unittest.TestCase):
         else:
             response = False
         self.assertEqual(response, True)
+    def test_db_presence(self):
+        result = os.path.isfile("./totally_not_my_privateKeys.db")
+        self.assertEqual(result, True)
 
 
 class AuthTest(unittest.TestCase):
@@ -156,7 +160,7 @@ response_suite = unittest.TestLoader().loadTestsFromTestCase(
 full_suite = unittest.TestSuite([basic_suite, auth_suite, jwks_suite, response_suite])
 unittest.TextTestRunner(verbosity=2).run(full_suite)  # run the full set of tests
 print("\nTest Coverage = Lines of Code Executed in Tests / Total Lines of Code")
-print("Test Coverage = 98 / 102 = {}%".format(int((98 / 102) * 100)))
+print("Test Coverage = 144 / 102 = {}%".format(int((144 / 155) * 100)))
 # My Test Suite does not cover the following lines of code:
-#   48-49: Checking if there is an expired tag
-#   60-61: Creating the expired tag
+#   86-93: Checking if there is an expired tag
+#   98-101: Querying for an expired key
