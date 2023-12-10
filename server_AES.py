@@ -6,11 +6,14 @@ from datetime import datetime, timedelta, timezone
 from jwt.utils import base64url_encode, bytes_from_int
 from calendar import timegm
 from argon2 import PasswordHasher
+from Crypto.Cipher import AES
 import sqlite3
 
 import uuid
 import json
 import jwt
+import random
+import os
 
 # Cody Quinn Hogan |    cqh0003                   |    11342946
 # CSCE 3550.001    |    Project 1: JWKS Server    |    server.py
@@ -116,8 +119,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             curs.execute(register, (a_ip, user_id))
             db.commit()
 
-            expiry = key_row[2]
-            priv_key_bytes = key_row[1]
+            nonce = key_row[2]
+            tag = key_row[3]
+            expiry = key_row[4]
+            aes_2 = AES.new(key, AES.MODE_EAX, nonce)
+            priv_key_bytes = aes_2.decrypt_and_verify(key_row[1], tag)
             keyID = str(key_row[0])
             jwt_token = jwt.encode(
                 {"exp": expiry},
@@ -159,7 +165,7 @@ http_server = HTTPServer(
 
 db = sqlite3.connect("totally_not_my_privateKeys.db")
 db.execute(
-    "CREATE TABLE IF NOT EXISTS keys(kid INTEGER PRIMARY KEY AUTOINCREMENT, key BLOB NOT NULL, exp INTEGER NOT NULL);",
+    "CREATE TABLE IF NOT EXISTS keys(kid INTEGER PRIMARY KEY AUTOINCREMENT, key BLOB NOT NULL, nonce BLOB NOT NULL, tag BLOB NOT NULL, exp INTEGER NOT NULL);",
 )
 db.execute(
     "CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, email TEXT UNIQUE, date_registered TIMESTAMP DEFAULT CURRENT_TIMESTAMP, last_login TIMESTAMP);",
@@ -167,9 +173,19 @@ db.execute(
 db.execute(
     "CREATE TABLE IF NOT EXISTS auth_logs(id INTEGER PRIMARY KEY AUTOINCREMENT, request_ip TEXT NOT NULL, request_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, user_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id));"
 )
+if os.environ.get("NOT_MY_KEY") == None:
+    rand = ""
+    for i in range(16):
+        rand += random.choice(
+            "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        )
+    os.environ["NOT_MY_KEY"] = rand
+key = bytes(os.environ.get("NOT_MY_KEY"), "UTF-8")
 
 print("Generating key pairs... Please wait...")
 for i in range(5):
+    aes_1 = AES.new(key, AES.MODE_EAX)
+    nonce = aes_1.nonce
     priv_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     priv_key_bytes = priv_key.private_bytes(
         encoding=serialization.Encoding.PEM,
@@ -180,8 +196,9 @@ for i in range(5):
         expiry = datetime.now(tz=timezone.utc) + timedelta(0, -3600, 0)
     else:  # provides expiry in one hour
         expiry = datetime.now(tz=timezone.utc) + timedelta(0, 3600, 0)
-    insert = "INSERT INTO keys (key, exp) VALUES(?, ?);"
-    db.execute(insert, (priv_key_bytes, timegm(expiry.timetuple())))
+    pk_aes, tag = aes_1.encrypt_and_digest(priv_key_bytes)
+    insert = "INSERT INTO keys (key, nonce, tag, exp) VALUES(?, ?, ?, ?);"
+    db.execute(insert, (pk_aes, nonce, tag, timegm(expiry.timetuple())))
 db.commit()
 print("HTTP Server running on Localhost port 8080...")
 try:

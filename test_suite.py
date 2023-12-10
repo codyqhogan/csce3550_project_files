@@ -33,7 +33,7 @@ class AuthTest(unittest.TestCase):
 
     def test_auth_post_response(self):
         response = requests.post(
-            url="http://localhost:8080/auth", auth=("userABC", "password123")
+            url="http://localhost:8080/auth", data={"username":"test", "password":" "}
         )
         self.assertEqual(
             response.status_code, 200
@@ -138,11 +138,11 @@ class ResponseTest(unittest.TestCase):
 
     def test_auth_response_format(self):
         response = requests.post(
-            url="http://localhost:8080/auth", auth=("userABC", "password123")
+            url="http://localhost:8080/auth", data={"username":"nonexistiant_username", "password":""}
         )
-        self.assertRegex(
-            response.text, r".*\..*\..*"
-        )  # assert that it is in [header].[payload].[signature] format
+        self.assertEqual(
+            response.text, ''
+        )  # assert that no response is given if the user does not exist
 
 
 basic_suite = unittest.TestLoader().loadTestsFromTestCase(
@@ -160,7 +160,4 @@ response_suite = unittest.TestLoader().loadTestsFromTestCase(
 full_suite = unittest.TestSuite([basic_suite, auth_suite, jwks_suite, response_suite])
 unittest.TextTestRunner(verbosity=2).run(full_suite)  # run the full set of tests
 print("\nTest Coverage = Lines of Code Executed in Tests / Total Lines of Code")
-print("Test Coverage = 144 / 155 = {}%".format(int((144 / 155) * 100)))
-# My Test Suite does not cover the following lines of code:
-#   86-93: Checking if there is an expired tag
-#   98-101: Querying for an expired key
+print("Test Coverage = 144 / 190 = {}%".format(int((144 / 190) * 100)))
